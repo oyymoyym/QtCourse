@@ -147,7 +147,11 @@ void MainWindow::on_btnClearAll_clicked()
 }
 void MainWindow::on_btnSign_clicked()
 {
-    if(operand.isEmpty()) return;
+    if (operand.isEmpty()) {
+        operand = "-";
+        ui->display->setText(operand);
+        return;
+    }
     double num = operand.toDouble();
     num = -num;
     operand = QString::number(num);

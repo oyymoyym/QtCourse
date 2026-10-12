@@ -131,11 +131,52 @@ void MainWindow::on_btnEqual_clicked()
     QString result=calculation();
     ui->display->setText(result);
 }
+//键盘绑定按键
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     foreach(auto btnKey,digitBTNs.keys()) {
         if(event->key()==btnKey)
             digitBTNs[btnKey]->animateClick(100);
+    }
+    if(event->key() == Qt::Key_Plus)
+    {
+        ui->btnPlus->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Minus)
+    {
+        ui->btnMinus->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Asterisk)
+    {
+        ui->btnMultiple->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Slash)
+    {
+        ui->btnDivide->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Period)
+    {
+        ui->btnPeriod->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Backspace)
+    {
+        ui->btnDel->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+    {
+        ui->btnEqual->animateClick(100);
+        return;
+    }
+    if(event->key() == Qt::Key_Escape)
+    {
+        ui->btnClear->animateClick(100);
+        return;
     }
 }
 void MainWindow::on_btnClearAll_clicked()

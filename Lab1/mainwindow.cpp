@@ -8,16 +8,16 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     digitBTNs= {{Qt::Key_0,ui->btnNum0},
-        {Qt::Key_1,ui->btnNum1},
-        {Qt::Key_2,ui->btnNum2},
-        {Qt::Key_3,ui->btnNum3},
-        {Qt::Key_4,ui->btnNum4},
-        {Qt::Key_5,ui->btnNum5},
-        {Qt::Key_6,ui->btnNum6},
-        {Qt::Key_7,ui->btnNum7},
-        {Qt::Key_8,ui->btnNum8},
-        {Qt::Key_9,ui->btnNum9},
-    };
+                 {Qt::Key_1,ui->btnNum1},
+                 {Qt::Key_2,ui->btnNum2},
+                 {Qt::Key_3,ui->btnNum3},
+                 {Qt::Key_4,ui->btnNum4},
+                 {Qt::Key_5,ui->btnNum5},
+                 {Qt::Key_6,ui->btnNum6},
+                 {Qt::Key_7,ui->btnNum7},
+                 {Qt::Key_8,ui->btnNum8},
+                 {Qt::Key_9,ui->btnNum9},
+                 };
     foreach(auto btn,digitBTNs)
         connect(btn,SIGNAL(clicked()),this,SLOT(btnNumClicked()));
     connect(ui->btnPlus,SIGNAL(clicked()),this,SLOT(btnBinaryOperatorClicked()));
@@ -35,23 +35,25 @@ MainWindow::~MainWindow()
 }
 QString MainWindow::calculation(bool *ok)
 {
-    double result=0;
-    if (operands.size ()==2&&opcodes.size ()>0) {
-// 取操作数
-        double operand1=operands.front ().toDouble ();
-        operands.pop_front ();
-        double operand2=operands.front ().toDouble ();
-        operands.pop_front ();
-// 取操作符
-        QString op=opcodes.front ();
-        opcodes.pop_front ();
-        if (op=="+") {
-            result=operand1+operand2;
-        } else if (op=="-") {
-            result=operand1-operand2;
-        } else if (op=="×") {
-            result=operand1*operand2;
-        } else if(op=="/") {
+    if (ok) *ok = false;
+
+    double result = 0;
+    if (operands.size() == 2 && opcodes.size() > 0) {
+        double operand1 = operands.front().toDouble();
+        operands.pop_front();
+        double operand2 = operands.front().toDouble();
+        operands.pop_front();
+
+        QString op = opcodes.front();
+        opcodes.pop_front();
+
+        if (op == "+") {
+            result = operand1 + operand2;
+        } else if (op == "-") {
+            result = operand1 - operand2;
+        } else if (op == "×") {
+            result = operand1 * operand2;
+        } else if (op == "/") {
             if (operand2 == 0) {
                 operands.clear();
                 opcodes.clear();
@@ -60,11 +62,13 @@ QString MainWindow::calculation(bool *ok)
             }
             result = operand1 / operand2;
         }
+
         operands.push_back(QString::number(result));
-        ui->statusbar->showMessage(QString("calcuation is in progress：operands is %1,opcodes is %2").arg(operands.size()).arg(opcodes.size()));
-    } else
-        ui->statusbar->showMessage(QString("operands is %1,opcodes is %2").arg(operands.size()).arg(opcodes.size()));
-    return QString::number(result);
+        if (ok) *ok = true;
+        return QString::number(result);
+    }
+
+    return "";
 }
 void MainWindow::btnNumClicked()
 {
@@ -102,8 +106,18 @@ void MainWindow::btnBinaryOperatorClicked()
         operand="";
         opcodes.push_back(opcode);
     }
-    QString result=calculation();
-    ui->display->setText(result);
+
+    bool ok = false;
+    QString result = calculation(&ok);
+
+    if (!result.isEmpty()) {
+        if (ok) {
+            ui->display->setText(result);
+        } else {
+            operand.clear();
+            ui->display->setText("错误");
+        }
+    }
 }
 void MainWindow::btnUnaryOperatorClicked()
 {
@@ -128,8 +142,18 @@ void MainWindow::on_btnEqual_clicked()
         operands.push_back(operand);
         operand="";
     }
-    QString result=calculation();
-    ui->display->setText(result);
+
+    bool ok = false;
+    QString result = calculation(&ok);
+
+    if (!result.isEmpty()) {
+        if (ok) {
+            ui->display->setText(result);
+        } else {
+            operand.clear();
+            ui->display->setText("错误");
+        }
+    }
 }
 //键盘绑定按键
 void MainWindow::keyPressEvent(QKeyEvent *event)

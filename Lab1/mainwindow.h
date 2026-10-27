@@ -49,5 +49,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    bool calculationFinished = false;
 };
 #endif // MAINWINDOW_H

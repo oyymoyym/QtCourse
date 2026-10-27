@@ -2,37 +2,42 @@
 #include "ui_mainwindow.h"
 #include <math.h>
 #include <QDebug>
-MainWindow::MainWindow(QWidget *parent)
+#include <QKeyEvent>
+#include <QPushButton>
+
+    MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    digitBTNs= {{Qt::Key_0,ui->btnNum0},
-                 {Qt::Key_1,ui->btnNum1},
-                 {Qt::Key_2,ui->btnNum2},
-                 {Qt::Key_3,ui->btnNum3},
-                 {Qt::Key_4,ui->btnNum4},
-                 {Qt::Key_5,ui->btnNum5},
-                 {Qt::Key_6,ui->btnNum6},
-                 {Qt::Key_7,ui->btnNum7},
-                 {Qt::Key_8,ui->btnNum8},
-                 {Qt::Key_9,ui->btnNum9},
+    digitBTNs = {{Qt::Key_0, ui->btnNum0},
+                 {Qt::Key_1, ui->btnNum1},
+                 {Qt::Key_2, ui->btnNum2},
+                 {Qt::Key_3, ui->btnNum3},
+                 {Qt::Key_4, ui->btnNum4},
+                 {Qt::Key_5, ui->btnNum5},
+                 {Qt::Key_6, ui->btnNum6},
+                 {Qt::Key_7, ui->btnNum7},
+                 {Qt::Key_8, ui->btnNum8},
+                 {Qt::Key_9, ui->btnNum9},
                  };
-    foreach(auto btn,digitBTNs)
-        connect(btn,SIGNAL(clicked()),this,SLOT(btnNumClicked()));
-    connect(ui->btnPlus,SIGNAL(clicked()),this,SLOT(btnBinaryOperatorClicked()));
-    connect(ui->btnMinus,SIGNAL(clicked()),this,SLOT(btnBinaryOperatorClicked()));
-    connect(ui->btnMultiple,SIGNAL(clicked()),this,SLOT(btnBinaryOperatorClicked()));
-    connect(ui->btnDivide,SIGNAL(clicked()),this,SLOT(btnBinaryOperatorClicked()));
-    connect(ui->btnPercentage,SIGNAL(clicked()),this,SLOT(btnUnaryOperatorClicked()));
-    connect(ui->btnInverse,SIGNAL(clicked()),this,SLOT(btnUnaryOperatorClicked()));
-    connect(ui->btnSquare,SIGNAL(clicked()),this,SLOT(btnUnaryOperatorClicked()));
-    connect(ui->btnSqrt,SIGNAL(clicked()),this,SLOT(btnUnaryOperatorClicked()));
+    foreach(auto btn, digitBTNs)
+        connect(btn, SIGNAL(clicked()), this, SLOT(btnNumClicked()));
+    connect(ui->btnPlus, SIGNAL(clicked()), this, SLOT(btnBinaryOperatorClicked()));
+    connect(ui->btnMinus, SIGNAL(clicked()), this, SLOT(btnBinaryOperatorClicked()));
+    connect(ui->btnMultiple, SIGNAL(clicked()), this, SLOT(btnBinaryOperatorClicked()));
+    connect(ui->btnDivide, SIGNAL(clicked()), this, SLOT(btnBinaryOperatorClicked()));
+    connect(ui->btnPercentage, SIGNAL(clicked()), this, SLOT(btnUnaryOperatorClicked()));
+    connect(ui->btnInverse, SIGNAL(clicked()), this, SLOT(btnUnaryOperatorClicked()));
+    connect(ui->btnSquare, SIGNAL(clicked()), this, SLOT(btnUnaryOperatorClicked()));
+    connect(ui->btnSqrt, SIGNAL(clicked()), this, SLOT(btnUnaryOperatorClicked()));
 }
+
 MainWindow::~MainWindow()
 {
     delete ui;
 }
+
 QString MainWindow::calculation(bool *ok)
 {
     if (ok) *ok = false;
@@ -70,40 +75,73 @@ QString MainWindow::calculation(bool *ok)
 
     return "";
 }
+
 void MainWindow::btnNumClicked()
 {
-    QString digit=qobject_cast<QPushButton*>(sender())->text();
-    if(digit=="0"&&operand=="0")
-        digit="";
-    if(digit!="0"&&operand=="0")
-        operand="";
-    operand+=digit;
+    // 如果上一次是按了等号，那么按数字就开始新的计算
+    if (calculationFinished) {
+        operand.clear();
+        operands.clear();
+        opcodes.clear();
+        calculationFinished = false;
+    }
+
+    QString digit = qobject_cast<QPushButton*>(sender())->text();
+    if (digit == "0" && operand == "0")
+        digit = "";
+    if (digit != "0" && operand == "0")
+        operand = "";
+    operand += digit;
     ui->display->setText(operand);
 }
+
 void MainWindow::on_btnPeriod_clicked()
 {
-    if(!operand.contains(".")) {
-        operand+=qobject_cast<QPushButton*>(sender())->text();
+    // 如果上一次是按了等号，按小数点开始新的计算
+    if (calculationFinished) {
+        operand.clear();
+        operands.clear();
+        opcodes.clear();
+        calculationFinished = false;
+    }
+    if (!operand.contains(".")) {
+        if (operand.isEmpty())
+            operand = "0";
+        operand += qobject_cast<QPushButton*>(sender())->text();
         ui->display->setText(operand);
     }
 }
+
 void MainWindow::on_btnDel_clicked()
 {
-    operand=operand.left(operand.length()-1);
+    if (calculationFinished) {
+        // 按了等号后按退格，视为开始新一轮编辑
+        calculationFinished = false;
+    }
+    operand = operand.left(operand.length() - 1);
     ui->display->setText(operand);
 }
+
 void MainWindow::on_btnClear_clicked()
 {
     operand.clear();
+    calculationFinished = false;
     ui->display->setText(operand);
 }
+
 void MainWindow::btnBinaryOperatorClicked()
 {
-    ui->statusbar->showMessage("last operand"+operand);
-    QString opcode=qobject_cast<QPushButton*>(sender())->text();
-    if(operand!="") {
+    // 按了等号后按运算符：基于上一次的结果继续运算
+    // 此时 operand 中保存的是上次的结果，直接使用，只需清除标志
+    if (calculationFinished) {
+        calculationFinished = false;
+    }
+
+    ui->statusbar->showMessage("last operand" + operand);
+    QString opcode = qobject_cast<QPushButton*>(sender())->text();
+    if (operand != "") {
         operands.push_back(operand);
-        operand="";
+        operand = "";
         opcodes.push_back(opcode);
     }
 
@@ -116,31 +154,40 @@ void MainWindow::btnBinaryOperatorClicked()
         } else {
             operand.clear();
             ui->display->setText("错误");
+            calculationFinished = false;
         }
     }
 }
+
 void MainWindow::btnUnaryOperatorClicked()
 {
-    if(operand!="") {
-        double result=operand.toDouble();
-        operand="";
-        QString op=qobject_cast<QPushButton*>(sender())->text();
-        if(op=="%")
-            result/=100.0;
-        else if(op=="1/x")
-            result=1/result;
-        else if(op=="x`2")
-            result*=result;
-        else if(op=="√")
-            result=sqrt(result);
+    // 按了等号后按一元运算符：对上次结果进行运算
+    if (calculationFinished) {
+        calculationFinished = false;
+    }
+
+    if (operand != "") {
+        double result = operand.toDouble();
+        operand = "";
+        QString op = qobject_cast<QPushButton*>(sender())->text();
+        if (op == "%")
+            result /= 100.0;
+        else if (op == "1/x")
+            result = 1 / result;
+        else if (op == "x`2")
+            result *= result;
+        else if (op == "√")
+            result = sqrt(result);
         ui->display->setText(QString::number(result));
+        operand = QString::number(result);  // 保留结果，方便后续继续运算
     }
 }
+
 void MainWindow::on_btnEqual_clicked()
 {
-    if(operand!="") {
+    if (operand != "") {
         operands.push_back(operand);
-        operand="";
+        operand = "";
     }
 
     bool ok = false;
@@ -149,69 +196,83 @@ void MainWindow::on_btnEqual_clicked()
     if (!result.isEmpty()) {
         if (ok) {
             ui->display->setText(result);
+            // 关键：计算完成后将结果作为新的 operand，
+            // 以便可以继续按运算符基于此结果运算
+            operand = result;
+            calculationFinished = true;  // 标记刚完成一次计算
         } else {
             operand.clear();
             ui->display->setText("错误");
+            calculationFinished = false;
         }
     }
 }
-//键盘绑定按键
+
+// 键盘绑定按键
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    foreach(auto btnKey,digitBTNs.keys()) {
-        if(event->key()==btnKey)
+    foreach(auto btnKey, digitBTNs.keys()) {
+        if (event->key() == btnKey)
             digitBTNs[btnKey]->animateClick(100);
     }
-    if(event->key() == Qt::Key_Plus)
+    if (event->key() == Qt::Key_Plus)
     {
         ui->btnPlus->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Minus)
+    if (event->key() == Qt::Key_Minus)
     {
         ui->btnMinus->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Asterisk)
+    if (event->key() == Qt::Key_Asterisk)
     {
         ui->btnMultiple->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Slash)
+    if (event->key() == Qt::Key_Slash)
     {
         ui->btnDivide->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Period)
+    if (event->key() == Qt::Key_Period)
     {
         ui->btnPeriod->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Backspace)
+    if (event->key() == Qt::Key_Backspace)
     {
         ui->btnDel->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+    if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
     {
         ui->btnEqual->animateClick(100);
         return;
     }
-    if(event->key() == Qt::Key_Escape)
+    if (event->key() == Qt::Key_Escape)
     {
         ui->btnClear->animateClick(100);
         return;
     }
 }
+
 void MainWindow::on_btnClearAll_clicked()
 {
     operand.clear();
     operands.clear();
     opcodes.clear();
+    calculationFinished = false;
     ui->display->setText("0");
 }
+
 void MainWindow::on_btnSign_clicked()
 {
+    // 按了等号后按正负号：对上次结果取反
+    if (calculationFinished) {
+        calculationFinished = false;
+    }
+
     if (operand.isEmpty()) {
         operand = "-";
         ui->display->setText(operand);
